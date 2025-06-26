@@ -1,4 +1,5 @@
 import Foundation
+import ArgumentParser
 
 /// Main command structure for santactl using ArgumentParser
 /// This will be the entry point when we integrate swift-argument-parser
@@ -48,10 +49,10 @@ struct FileInfo: ParsableCommand {
         abstract: "Inspect file information"
     )
     
-    // @Argument(help: "Path to the file to inspect")
-    var filePath: String = ""
+    @Argument(help: "Path to the file to inspect")
+    var filePath: String
     
-    // @Flag(name: .shortAndLong, help: "Use JSON output")
+    @Flag(name: .shortAndLong, help: "Use JSON output")
     var json = false
     
     func run() throws {
@@ -70,25 +71,25 @@ struct Rule: ParsableCommand {
             abstract: "Add a rule"
         )
         
-        // @Option(name: .shortAndLong, help: "Path to the file")
+        @Option(name: .shortAndLong, help: "Path to the file")
         var path: String?
         
-        // @Option(name: .shortAndLong, help: "SHA256 hash")
+        @Option(name: .shortAndLong, help: "SHA256 hash")
         var sha256: String?
         
-        // @Option(name: .shortAndLong, help: "Certificate SHA256")
+        @Option(name: .shortAndLong, help: "Certificate SHA256")
         var certificate: String?
         
-        // @Option(name: .shortAndLong, help: "Team ID")
+        @Option(name: .shortAndLong, help: "Team ID")
         var teamID: String?
         
-        // @Option(name: .shortAndLong, help: "Signing ID")
+        @Option(name: .shortAndLong, help: "Signing ID")
         var signingID: String?
         
-        // @Option(name: .shortAndLong, help: "Rule state (ALLOWLIST/BLOCKLIST)")
-        var state: String = ""
+        @Option(name: .shortAndLong, help: "Rule state (ALLOWLIST/BLOCKLIST)")
+        var state: String
         
-        // @Option(name: .shortAndLong, help: "Custom message")
+        @Option(name: .shortAndLong, help: "Custom message")
         var message: String?
         
         func run() throws {
@@ -101,8 +102,8 @@ struct Rule: ParsableCommand {
             abstract: "Remove a rule"
         )
         
-        // @Option(name: .shortAndLong, help: "Rule identifier")
-        var identifier: String = ""
+        @Option(name: .shortAndLong, help: "Rule identifier")
+        var identifier: String
         
         func run() throws {
             // Implementation
@@ -114,7 +115,7 @@ struct Rule: ParsableCommand {
             abstract: "List rules"
         )
         
-        // @Flag(name: .shortAndLong, help: "Use JSON output")
+        @Flag(name: .shortAndLong, help: "Use JSON output")
         var json = false
         
         func run() throws {
@@ -128,10 +129,10 @@ struct Sync: ParsableCommand {
         abstract: "Sync with server"
     )
     
-    // @Flag(name: .shortAndLong, help: "Show sync status")
+    @Flag(name: .shortAndLong, help: "Show sync status")
     var status = false
     
-    // @Flag(help: "Perform a clean sync")
+    @Flag(help: "Perform a clean sync")
     var clean = false
     
     func run() throws {
@@ -154,8 +155,8 @@ struct CheckCache: ParsableCommand {
         abstract: "Check file in cache"
     )
     
-    // @Argument(help: "Path to the file to check")
-    var filePath: String = ""
+    @Argument(help: "Path to the file to check")
+    var filePath: String
     
     func run() throws {
         // Implementation will call SNTCommandCheckCache
@@ -177,7 +178,7 @@ struct Metrics: ParsableCommand {
         abstract: "Display metrics"
     )
     
-    // @Option(name: .shortAndLong, help: "Output format (JSON/human)")
+    @Option(name: .shortAndLong, help: "Output format (JSON/human)")
     var format: String = "human"
     
     func run() throws {
@@ -210,10 +211,10 @@ struct PrintLog: ParsableCommand {
         abstract: "Print Santa logs"
     )
     
-    // @Option(name: .shortAndLong, help: "Log file path")
+    @Option(name: .shortAndLong, help: "Log file path")
     var path: String?
     
-    // @Option(name: .shortAndLong, help: "Output format")
+    @Option(name: .shortAndLong, help: "Output format")
     var format: String = "syslog"
     
     func run() throws {
@@ -226,7 +227,7 @@ struct Install: ParsableCommand {
         abstract: "Install Santa components"
     )
     
-    // @Flag(help: "Force reinstall")
+    @Flag(help: "Force reinstall")
     var force = false
     
     func run() throws {
@@ -249,60 +250,11 @@ struct BundleInfo: ParsableCommand {
         abstract: "Analyze app bundles"
     )
     
-    // @Argument(help: "Path to the bundle")
-    var bundlePath: String = ""
+    @Argument(help: "Path to the bundle")
+    var bundlePath: String
     
     func run() throws {
         // Implementation will call SNTCommandBundleInfo
     }
 }
 
-// Placeholder protocol to make it compile without ArgumentParser
-protocol ParsableCommand {
-    static var configuration: CommandConfiguration { get }
-    func run() throws
-}
-
-struct CommandConfiguration {
-    let commandName: String?
-    let abstract: String
-    let version: String?
-    let subcommands: [ParsableCommand.Type]
-    
-    init(commandName: String? = nil, abstract: String, version: String? = nil, subcommands: [ParsableCommand.Type] = []) {
-        self.commandName = commandName
-        self.abstract = abstract
-        self.version = version
-        self.subcommands = subcommands
-    }
-}
-
-// Placeholder property wrappers
-@propertyWrapper
-struct Argument<T> {
-    var wrappedValue: T
-    init(wrappedValue: T, help: String) {
-        self.wrappedValue = wrappedValue
-    }
-}
-
-@propertyWrapper  
-struct Option<T> {
-    var wrappedValue: T
-    init(wrappedValue: T, name: NameSpecification = .long, help: String) {
-        self.wrappedValue = wrappedValue
-    }
-}
-
-@propertyWrapper
-struct Flag {
-    var wrappedValue: Bool = false
-    init(name: NameSpecification = .long, help: String) {
-    }
-}
-
-enum NameSpecification {
-    case short
-    case long
-    case shortAndLong
-}

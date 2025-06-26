@@ -15,7 +15,7 @@ swift_library(
         "PlaceholderTypes.swift",
         "CompletionScripts.swift",
         "XPCConnection.swift",
-        # "SantaCtlCommand.swift",  # Disabled for now - will use with ArgumentParser
+        "SantaCtlCommand.swift",
         "Commands/SNTCommandStatus.swift",
         "Commands/SNTCommandVersion.swift",
         "Commands/SNTCommandCompletion.swift",
@@ -37,6 +37,7 @@ swift_library(
         "//Source/common:SNTFileInfo",
         "//Source/common:SNTCommonEnums",
         "//Source/common:SNTXPCUnprivilegedControlInterface",
+        "@swift_argument_parser//:ArgumentParser",
     ],
 )
 
