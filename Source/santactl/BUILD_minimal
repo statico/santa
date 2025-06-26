@@ -1,0 +1,17 @@
+load("@rules_apple//apple:macos.bzl", "macos_command_line_application")
+load("@rules_swift//swift:swift.bzl", "swift_library")
+
+licenses(["notice"])
+
+# Minimal Swift test
+swift_library(
+    name = "santactl_swift_test",
+    srcs = ["SimpleMain.swift"],
+)
+
+macos_command_line_application(
+    name = "santactl_swift_test",
+    bundle_id = "com.northpolesec.santa.ctl.test",
+    minimum_os_version = "13.0",
+    deps = [":santactl_swift_test"],
+)

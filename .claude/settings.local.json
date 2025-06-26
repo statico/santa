@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(bazel build:*)",
+      "Bash(bazel-bin/Source/santactl/santactl:*)",
+      "Bash(./bazel-bin/Source/santactl/santactl --help)",
+      "Bash(./bazel-bin/Source/santactl/santactl:*)"
+    ],
+    "deny": []
+  }
+}

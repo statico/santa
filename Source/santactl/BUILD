@@ -1,9 +1,39 @@
 load("@rules_apple//apple:macos.bzl", "macos_command_line_application")
 load("@rules_cc//cc:defs.bzl", "objc_library")
+load("@rules_swift//swift:swift.bzl", "swift_library")
 load("//:helper.bzl", "santa_unit_test")
 
 licenses(["notice"])
 
+# Swift implementation of santactl
+swift_library(
+    name = "santactl_swift_lib",
+    srcs = [
+        "main.swift",
+        "SNTCommand.swift",
+        "SNTCommandController.swift",
+        "PlaceholderTypes.swift",
+        "CompletionScripts.swift",
+        # "XPCBridge.swift",  # Not created yet
+        # "SantaCtlCommand.swift",  # Disabled for now - will use with ArgumentParser
+        "Commands/SNTCommandStatus.swift",
+        "Commands/SNTCommandVersion.swift",
+        "Commands/SNTCommandCompletion.swift",
+        "Commands/CommandStubs.swift",
+    ],
+    module_name = "SantaCtl",
+    deps = [
+        "//Source/common:MOLXPCConnection",
+        "//Source/common:SNTLogging",
+        "//Source/common:SNTXPCControlInterface",
+        "//Source/common:SNTConfigurator",
+        "//Source/common:SNTFileInfo",
+        "//Source/common:SNTCommonEnums",
+        "//Source/common:SNTXPCUnprivilegedControlInterface",
+    ],
+)
+
+# Original Objective-C implementation (kept for reference/fallback)
 objc_library(
     name = "santactl_cmd",
     srcs = [
@@ -56,7 +86,7 @@ objc_library(
 )
 
 objc_library(
-    name = "santactl_lib",
+    name = "santactl_objc_lib",
     srcs = [
         "Commands/SNTCommandCheckCache.m",
         "Commands/SNTCommandDoctor.mm",
@@ -113,6 +143,7 @@ objc_library(
     ],
 )
 
+# New Swift-based santactl binary
 macos_command_line_application(
     name = "santactl",
     bundle_id = "com.northpolesec.santa.ctl",
@@ -131,7 +162,29 @@ macos_command_line_application(
     }),
     version = "//:version",
     visibility = ["//:santa_package_group"],
-    deps = [":santactl_lib"],
+    deps = [":santactl_swift_lib"],
+)
+
+# Original Objective-C santactl binary (for comparison/testing)
+macos_command_line_application(
+    name = "santactl_objc",
+    bundle_id = "com.northpolesec.santa.ctl",
+    codesignopts = [
+        "--force",
+        "--options library,kill,runtime",
+    ],
+    infoplists = [
+        "Info.plist",
+        "//Source/common:CommitHash",
+    ],
+    minimum_os_version = "13.0",
+    provisioning_profile = select({
+        "//:adhoc_build": None,
+        "//conditions:default": "//profiles:santa_dev",
+    }),
+    version = "//:version",
+    visibility = ["//:santa_package_group"],
+    deps = [":santactl_objc_lib"],
 )
 
 santa_unit_test(
@@ -172,7 +225,7 @@ santa_unit_test(
     structured_resources = glob(["Commands/testdata/*"]),
     visibility = ["//:santa_package_group"],
     deps = [
-        ":santactl_lib",
+        ":santactl_objc_lib",
         "//Source/common:MOLXPCConnection",
         "//Source/common:SNTCommonEnums",
         "//Source/common:SNTConfigurator",
