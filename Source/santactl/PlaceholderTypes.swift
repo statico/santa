@@ -22,9 +22,22 @@ import Foundation
 
 @objc class SNTFileInfo: NSObject {
     @objc var infoPlist: [String: Any]?
+    @objc var path: String?
+    @objc var sha256: String?
+    @objc var sha1: String?
+    @objc var bundleName: String?
+    @objc var bundleVersion: String?
+    @objc var bundleShortVersionString: String?
+    @objc var quarantineRefererURL: String?
+    @objc var quarantineDataURL: String?
+    @objc var quarantineTimestamp: Date?
+    @objc var quarantineAgentBundleID: String?
+    @objc var bundle: Bundle?
+    @objc var bundlePath: String?
     
     @objc init?(path: String) {
         super.init()
+        self.path = path
         
         // In real implementation, this would read the Info.plist from the bundle
         // For now, return placeholder data
@@ -39,12 +52,20 @@ import Foundation
             // This is a simplified version
             self.infoPlist = nil
         }
+        
+        // Placeholder values
+        self.sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+        self.sha1 = "0000000000000000000000000000000000000000"
+    }
+    
+    @objc func architectures() -> [String] {
+        return []
     }
 }
 
 // MARK: - Enums
 
-enum SNTSyncType: Int {
+@objc enum SNTSyncType: Int {
     case normal = 0
     case clean = 1
     case cleanAll = 2
@@ -77,6 +98,41 @@ struct RuleCounts {
     var teamID: Int64 = 0
     var signingID: Int64 = 0
     var cdhash: Int64 = 0
+}
+
+// MARK: - Rule Types
+
+@objc public enum SNTRuleState: Int {
+    case unknown = 0
+    case allow = 1
+    case block = 2
+    case silentBlock = 3
+    case allowCompiler = 4
+    case remove = 5
+    case cel = 6
+}
+
+@objc public enum SNTRuleType: Int {
+    case unknown = 0
+    case binary = 1
+    case certificate = 2
+    case teamID = 3
+    case signingID = 4
+    case cdHash = 5
+}
+
+@objc public class SNTRule: NSObject {
+    @objc public var state: SNTRuleState = .unknown
+    @objc public var type: SNTRuleType = .binary
+    @objc public var identifier: String?
+    @objc public var customMsg: String?
+    @objc public var customURL: String?
+    @objc public var comment: String?
+    @objc public var celExpr: String?
+    
+    @objc public override init() {
+        super.init()
+    }
 }
 
 // MARK: - Constants

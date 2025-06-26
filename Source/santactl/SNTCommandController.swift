@@ -10,7 +10,7 @@ public class SNTCommandController: NSObject {
     private var commands: [String: SNTCommand.Type] = [:]
     
     /// XPC connection to the daemon
-    private var daemonConnection: NSXPCConnection?
+    private var xpcConnection: XPCConnection?
     
     override init() {
         super.init()
@@ -71,7 +71,7 @@ public class SNTCommandController: NSObject {
         // Set up daemon connection if needed
         if command.requiresDaemonConn {
             try await establishDaemonConnection()
-            command.daemonConnection = daemonConnection
+            command.xpcConnection = xpcConnection
         }
         
         // Check root requirement
@@ -85,9 +85,13 @@ public class SNTCommandController: NSObject {
     
     /// Establish connection to the daemon
     private func establishDaemonConnection() async throws {
-        // Implementation will use SNTXPCControlInterface
-        // For now, this is a placeholder
-        // TODO: Implement XPC connection setup
+        guard xpcConnection == nil else { return }
+        
+        guard let connection = XPCConnection.createDaemonConnection() else {
+            throw CommandError.xpcConnectionFailed
+        }
+        
+        xpcConnection = connection
     }
     
     /// Print usage information
@@ -154,6 +158,7 @@ enum CommandError: LocalizedError {
     case requiresRoot
     case xpcConnectionFailed
     case invalidArguments
+    case invalidOperation
     
     var errorDescription: String? {
         switch self {
@@ -167,6 +172,8 @@ enum CommandError: LocalizedError {
             return "Failed to connect to Santa daemon"
         case .invalidArguments:
             return "Invalid arguments provided"
+        case .invalidOperation:
+            return "Invalid operation"
         }
     }
 }

@@ -26,7 +26,7 @@ public protocol SNTCommandProtocol {
 @objc(SNTCommand)
 open class SNTCommand: NSObject, SNTCommandProtocol {
     /// XPC connection to the daemon (set by controller if needed)
-    public var daemonConnection: NSXPCConnection?
+    public var xpcConnection: XPCConnection?
     
     /// Short description of the command
     open var shortHelp: String {
@@ -117,28 +117,12 @@ open class SNTCommand: NSObject, SNTCommandProtocol {
     
     /// Get the daemon interface
     public func daemonInterface() -> SNTDaemonControlXPC? {
-        guard let connection = daemonConnection else {
-            return nil
-        }
-        
-        let proxy = connection.remoteObjectProxyWithErrorHandler { error in
-            self.printError("XPC error: \(error.localizedDescription)")
-        }
-        
-        return proxy as? SNTDaemonControlXPC
+        return xpcConnection?.daemonControlProxy()
     }
     
     /// Get the unprivileged daemon interface
     public func unprivilegedDaemonInterface() -> SNTUnprivilegedDaemonControlXPC? {
-        guard let connection = daemonConnection else {
-            return nil
-        }
-        
-        let proxy = connection.remoteObjectProxyWithErrorHandler { error in
-            self.printError("XPC error: \(error.localizedDescription)")
-        }
-        
-        return proxy as? SNTUnprivilegedDaemonControlXPC
+        return xpcConnection?.unprivilegedDaemonControlProxy()
     }
 }
 
