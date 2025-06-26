@@ -56,8 +56,6 @@ class SNTCommandCheckCache: SNTCommand {
             print("File exists in [allowlist compiler] cache")
         case .unset:
             print("File does not exist in cache")
-        default:
-            print("Unknown cache status")
         }
     }
     

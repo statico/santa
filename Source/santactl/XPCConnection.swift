@@ -85,13 +85,13 @@ extension SNTDaemonControlXPC {
         await withCheckedContinuation { continuation in
             self.databaseRuleCounts { counts in
                 var ruleCounts = RuleCounts()
-                ruleCounts.binary = (counts["binary"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.certificate = (counts["certificate"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.compiler = (counts["compiler"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.transitive = (counts["transitive"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.teamID = (counts["teamID"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.signingID = (counts["signingID"] as? NSNumber)?.int64Value ?? 0
-                ruleCounts.cdhash = (counts["cdhash"] as? NSNumber)?.int64Value ?? 0
+                ruleCounts.binary = counts["binary"]?.int64Value ?? 0
+                ruleCounts.certificate = counts["certificate"]?.int64Value ?? 0
+                ruleCounts.compiler = counts["compiler"]?.int64Value ?? 0
+                ruleCounts.transitive = counts["transitive"]?.int64Value ?? 0
+                ruleCounts.teamID = counts["teamID"]?.int64Value ?? 0
+                ruleCounts.signingID = counts["signingID"]?.int64Value ?? 0
+                ruleCounts.cdhash = counts["cdhash"]?.int64Value ?? 0
                 continuation.resume(returning: ruleCounts)
             }
         }
