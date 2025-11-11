@@ -99,6 +99,10 @@
   [self.syncManager pushNotificationStatus:reply];
 }
 
+- (void)syncIntervals:(void (^)(NSUInteger fullSyncInterval, NSUInteger pushNotificationsFullSyncInterval))reply {
+  [self.syncManager syncIntervals:reply];
+}
+
 - (void)exportTelemetryFiles:(NSArray<NSFileHandle *> *)fds
                     fileName:(NSString *)fileName
                    totalSize:(NSUInteger)totalSize

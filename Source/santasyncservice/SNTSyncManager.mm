@@ -60,6 +60,9 @@ static const uint8_t kMaxEnqueuedSyncs = 2;
 @property NSString *xsrfToken;
 @property NSString *xsrfTokenHeader;
 
+@property NSUInteger currentFullSyncInterval;
+@property NSUInteger currentPushNotificationsFullSyncInterval;
+
 @end
 
 @implementation SNTSyncManager
@@ -93,6 +96,8 @@ static const uint8_t kMaxEnqueuedSyncs = 2;
     _syncLimiter = dispatch_semaphore_create(kMaxEnqueuedSyncs);
 
     _eventBatchSize = kDefaultEventBatchSize;
+    _currentFullSyncInterval = kDefaultFullSyncInterval;
+    _currentPushNotificationsFullSyncInterval = kDefaultPushNotificationsFullSyncInterval;
   }
   return self;
 }
@@ -161,6 +166,16 @@ static const uint8_t kMaxEnqueuedSyncs = 2;
     reply(SNTPushNotificationStatusDisconnected);
   }
   reply(SNTPushNotificationStatusConnected);
+}
+
+- (void)syncIntervals:(void (^)(NSUInteger fullSyncInterval,
+                                NSUInteger pushNotificationsFullSyncInterval))reply {
+  NSUInteger fullSyncInterval = self.currentFullSyncInterval;
+  NSUInteger pushNotificationsFullSyncInterval = self.currentPushNotificationsFullSyncInterval;
+  if (self.pushNotifications) {
+    pushNotificationsFullSyncInterval = self.pushNotifications.fullSyncInterval;
+  }
+  reply(fullSyncInterval, pushNotificationsFullSyncInterval);
 }
 
 - (void)APNSTokenChanged {
@@ -304,10 +319,12 @@ static const uint8_t kMaxEnqueuedSyncs = 2;
     // pushNotificationsFullSyncInterval.
     if (self.pushNotifications) {
       [self.pushNotifications handlePreflightSyncState:syncState];
+      self.currentPushNotificationsFullSyncInterval = syncState.pushNotificationsFullSyncInterval;
     } else {
       LOGD(@"Push notifications are not enabled. Sync every %lu min.",
            syncState.fullSyncInterval / 60);
       [self rescheduleTimerQueue:self.fullSyncTimer secondsFromNow:syncState.fullSyncInterval];
+      self.currentFullSyncInterval = syncState.fullSyncInterval;
     }
 
     if (syncState.preflightOnly) return SNTSyncStatusTypeSuccess;

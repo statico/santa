@@ -19,6 +19,7 @@
 #import "Source/common/SNTCommonEnums.h"
 #import "Source/common/SNTConfigurator.h"
 #import "Source/common/SNTXPCControlInterface.h"
+#import "Source/common/SNTXPCSyncServiceInterface.h"
 #include "Source/common/faa/WatchItems.h"
 #import "Source/santactl/SNTCommand.h"
 #import "Source/santactl/SNTCommandController.h"
@@ -144,6 +145,8 @@ REGISTER_COMMAND_NAME(@"status")
   }];
 
   __block NSString *pushNotifications = @"Unknown";
+  __block NSUInteger fullSyncInterval = 0;
+  __block NSUInteger pushNotificationsFullSyncInterval = 0;
   if ([[SNTConfigurator configurator] syncBaseURL]) {
     // The request to santad to discover whether push notifications are enabled
     // makes a call to santasyncservice. If it's unavailable the call can hang
@@ -162,6 +165,21 @@ REGISTER_COMMAND_NAME(@"status")
       }];
     });
     dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+
+    MOLXPCConnection *ss = [SNTXPCSyncServiceInterface configuredConnection];
+    ss.invalidationHandler = ^(void) {
+    };
+    [ss resume];
+    id<SNTSyncServiceXPC> syncService = [ss synchronousRemoteObjectProxy];
+    dispatch_semaphore_t syncSema = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+      [syncService syncIntervals:^(NSUInteger fullInterval, NSUInteger pushInterval) {
+        fullSyncInterval = fullInterval;
+        pushNotificationsFullSyncInterval = pushInterval;
+        dispatch_semaphore_signal(syncSema);
+      }];
+    });
+    dispatch_semaphore_wait(syncSema, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
   }
 
   __block BOOL enableBundles = NO;
@@ -267,6 +285,8 @@ REGISTER_COMMAND_NAME(@"status")
         @"bundle_scanning" : @(enableBundles),
         @"events_pending_upload" : @(eventCount),
         @"execution_rules_hash" : executionRulesHash ?: @"null",
+        @"full_sync_interval_seconds" : @(fullSyncInterval),
+        @"push_notifications_full_sync_interval_seconds" : @(pushNotificationsFullSyncInterval),
       } mutableCopy];
 
       if (watchItemsDataSource == santa::WatchItems::DataSource::kDatabase) {
@@ -374,6 +394,14 @@ REGISTER_COMMAND_NAME(@"status")
       printf("  %-25s | %s\n", "Bundle Scanning", (enableBundles ? "Yes" : "No"));
       printf("  %-25s | %lld\n", "Events Pending Upload", eventCount);
       printf("  %-25s | %s\n", "Execution Rules Hash", [executionRulesHash UTF8String]);
+      if (fullSyncInterval > 0) {
+        printf("  %-25s | %lu seconds (%lu minutes)\n", "Full Sync Interval", fullSyncInterval,
+               fullSyncInterval / 60);
+      }
+      if (pushNotificationsFullSyncInterval > 0) {
+        printf("  %-25s | %lu seconds (%lu minutes)\n", "Push Notifications Full Sync Interval",
+               pushNotificationsFullSyncInterval, pushNotificationsFullSyncInterval / 60);
+      }
       if (watchItemsDataSource == santa::WatchItems::DataSource::kDatabase) {
         printf("  %-25s | %s\n", "File Access Rules Hash",
                [(fileAccessRulesHash ?: @"null") UTF8String]);

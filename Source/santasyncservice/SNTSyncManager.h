@@ -72,6 +72,7 @@
 - (void)postBundleEventToSyncServer:(SNTStoredExecutionEvent *)event
                               reply:(void (^)(SNTBundleEventAction))reply;
 - (void)pushNotificationStatus:(void (^)(SNTPushNotificationStatus))reply;
+- (void)syncIntervals:(void (^)(NSUInteger fullSyncInterval, NSUInteger pushNotificationsFullSyncInterval))reply;
 - (void)APNSTokenChanged;
 - (void)handleAPNSMessage:(NSDictionary *)message;
 
