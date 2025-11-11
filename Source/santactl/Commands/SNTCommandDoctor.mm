@@ -23,8 +23,11 @@
 #include "absl/cleanup/cleanup.h"
 
 #import "Source/common/MOLAuthenticatingURLSession.h"
+#import "Source/common/MOLXPCConnection.h"
+#import "Source/common/SNTCommonEnums.h"
 #import "Source/common/SNTConfigurator.h"
 #import "Source/common/SNTLogging.h"
+#import "Source/common/SNTXPCControlInterface.h"
 #import "Source/common/SystemResources.h"
 #import "Source/santactl/SNTCommand.h"
 #import "Source/santactl/SNTCommandController.h"
@@ -81,6 +84,7 @@ REGISTER_COMMAND_NAME(@"doctor")
   err |= [self validateProcesses];
   err |= [self validateConfiguration];
   err |= [self validateSync];
+  err |= [self validatePushService];
   exit(err);
 }
 
@@ -216,6 +220,56 @@ REGISTER_COMMAND_NAME(@"doctor")
   print(@"");
 
   return NO;
+}
+
+- (BOOL)validatePushService {
+  print(@"=> Validating push service connectivity...");
+
+  SNTConfigurator *config = [SNTConfigurator configurator];
+  NSURL *syncBaseURL = config.syncBaseURL;
+  if (!syncBaseURL) {
+    print(@"[+] Push service is disabled (sync is disabled)");
+    print(@"");
+    return NO;
+  }
+
+  MOLXPCConnection *daemonConn = [SNTXPCControlInterface configuredConnection];
+  [daemonConn resume];
+  id<SNTDaemonControlXPC> rop = [daemonConn synchronousRemoteObjectProxy];
+
+  __block SNTPushNotificationStatus pushStatus = SNTPushNotificationStatusUnknown;
+  __block BOOL statusReceived = NO;
+
+  dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    [rop pushNotificationStatus:^(SNTPushNotificationStatus response) {
+      pushStatus = response;
+      statusReceived = YES;
+      dispatch_semaphore_signal(sema);
+    }];
+  });
+
+  dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC);
+  long result = dispatch_semaphore_wait(sema, timeout);
+
+  if (result != 0 || !statusReceived) {
+    print(@"[-] Failed to retrieve push service status (timeout or connection error)");
+    print(@"");
+    return YES;
+  }
+
+  switch (pushStatus) {
+    case SNTPushNotificationStatusDisabled: print(@"[+] Push service is disabled"); break;
+    case SNTPushNotificationStatusDisconnected:
+      print(@"[-] Push service is disconnected (check firewall/network connectivity)");
+      break;
+    case SNTPushNotificationStatusConnected: print(@"[+] Push service is connected"); break;
+    default: print(@"[-] Push service status is unknown"); break;
+  }
+
+  print(@"");
+  return (pushStatus == SNTPushNotificationStatusDisconnected ||
+          pushStatus == SNTPushNotificationStatusUnknown);
 }
 
 @end
